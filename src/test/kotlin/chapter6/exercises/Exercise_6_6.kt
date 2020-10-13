@@ -16,11 +16,15 @@ class Exercise_6_6 : WordSpec({
         ra: Rand<A>,
         rb: Rand<B>,
         f: (A, B) -> C
-    ): Rand<C> = TODO()
+    ): Rand<C> = { rng ->
+        val (a, r1) = ra(rng)
+        val (b, r2) = rb(r1)
+        Pair(f(a, b), r2)
+    }
     //end::init[]
 
     "map2" should {
-        "!combine the results of two actions" {
+        "combine the results of two actions" {
 
             val combined: Rand<String> =
                 map2(

@@ -38,6 +38,7 @@ data class Prop(val check: (TestCases, RNG) -> Result) {
         ): Sequence<A> = // <4>
             sequence {
                 val (a: A, rng2: RNG) = ga.sample.run(rng)
+                // println(a)
                 yield(a)
                 yieldAll(randomSequence(ga, rng2))
             }

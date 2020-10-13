@@ -7,6 +7,9 @@ import io.kotlintest.shouldThrow
 import io.kotlintest.specs.WordSpec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import java.util.concurrent.Callable
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
@@ -18,17 +21,23 @@ data class TimedMap2Future<A, B, C>(
     val pa: Future<A>,
     val pb: Future<B>,
     val f: (A, B) -> C
-) : Future<C> {
+) : CompletableFuture<C>() {
 
-    override fun isDone(): Boolean = TODO()
+    override fun isDone(): Boolean =
+        pa.isDone && pb.isDone || isCancelled
 
-    override fun get(): C = TODO()
+    override fun get(): C {
+        return f(pa.get(), pb.get())
+    }
 
-    override fun get(to: Long, tu: TimeUnit): C = TODO()
+    override fun get(to: Long, tu: TimeUnit): C =
+        f(pa.get(to, tu), pb.get(to, tu))
 
-    override fun cancel(b: Boolean): Boolean = TODO()
+    override fun cancel(b: Boolean): Boolean =
+        pa.cancel(b) && pb.cancel(b)
 
-    override fun isCancelled(): Boolean = TODO()
+    override fun isCancelled(): Boolean =
+        pa.isCancelled || pb.isCancelled
 }
 
 class Exercise_7_3 : WordSpec({
@@ -37,7 +46,14 @@ class Exercise_7_3 : WordSpec({
         a: Par<A>,
         b: Par<B>,
         f: (A, B) -> C
-    ): Par<C> = TODO()
+    ): Par<C> = { es: ExecutorService ->
+        // This causes a deadlock, where a(es) is waiting to submit a task,
+        //  but a(es) itself is executing within a task.  Since the thread
+        //  pool is limited to a single thread, and thus a single task,
+        //  progress is blocked.
+        // es.submit(Callable<C> { TimedMap2Future(a(es), b(es), f).get() })
+        TimedMap2Future(a(es), b(es), f)
+    }
 
     val es: ExecutorService =
         ThreadPoolExecutor(
@@ -45,14 +61,14 @@ class Exercise_7_3 : WordSpec({
         )
 
     "map2" should {
-        "!allow two futures to run within a given timeout" {
+        "allow two futures to run within a given timeout" {
 
             val pa = Pars.fork {
-                Thread.sleep(400L)
+                Thread.sleep(600L)
                 Pars.unit(1)
             }
             val pb = Pars.fork {
-                Thread.sleep(500L)
+                Thread.sleep(600L)
                 Pars.unit("1")
             }
             val pc: Par<Long> =
@@ -65,7 +81,7 @@ class Exercise_7_3 : WordSpec({
             }
         }
 
-        "!timeout if first future exceeds timeout" {
+        "timeout if first future exceeds timeout" {
 
             val pa = Pars.fork {
                 Thread.sleep(1100L)
@@ -87,7 +103,7 @@ class Exercise_7_3 : WordSpec({
             }
         }
 
-        "!timeout if second future exceeds timeout" {
+        "timeout if second future exceeds timeout" {
 
             val pa = Pars.fork {
                 Thread.sleep(100L)

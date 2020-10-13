@@ -15,7 +15,9 @@ fun <A, B> map(pa: Par<A>, f: (A) -> B): Par<B> =
 fun <A> unit(a: A): Par<A> =
     { es: ExecutorService -> Pars.UnitFuture(a) }
 
-fun <A> lazyUnit(a: () -> A): Par<A> = TODO()
+fun <A> lazyUnit(a: () -> A): Par<A> =
+    fork { unit(a()) }
+// fun <A> lazyUnit(a: () -> A): Par<A> = TODO()
 
 val step1 = {
     //tag::init1[]

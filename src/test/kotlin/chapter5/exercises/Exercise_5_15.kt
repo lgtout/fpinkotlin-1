@@ -1,7 +1,12 @@
 package chapter5.exercises
 
 import chapter3.List
+import chapter4.Boilerplate.map
+import chapter4.None
+import chapter4.Some
+import chapter5.Cons
 import chapter5.Stream
+import chapter5.Stream.Companion.empty
 import chapter5.solutions.toList
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.WordSpec
@@ -14,13 +19,19 @@ import chapter3.Nil as NilL
 class Exercise_5_15 : WordSpec({
 
     //tag::tails[]
-    fun <A> Stream<A>.tails(): Stream<Stream<A>> = TODO()
+    fun <A> Stream<A>.tails(): Stream<Stream<A>> =
+        unfold(this) { s ->
+            when (s) {
+                is Cons -> Some(Pair(s, s.t()))
+                else -> None
+            }
+        }
     //end::tails[]
 
-    fun <A, B> List<A>.map(f: (A) -> B): List<B> = TODO()
+    // fun <A, B> List<A>.map(f: (A) -> B): List<B> = TODO()
 
     "Stream.tails" should {
-        "!return the stream of suffixes of the input sequence" {
+        "return the stream of suffixes of the input sequence" {
             Stream.of(1, 2, 3)
                 .tails()
                 .toList()

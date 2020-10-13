@@ -7,7 +7,11 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.WordSpec
 
 // tag::init[]
-fun <A, B> map(tree: Tree<A>, f: (A) -> B): Tree<B> = TODO()
+fun <A, B> map(tree: Tree<A>, f: (A) -> B): Tree<B> =
+    when (tree) {
+        is Branch -> Branch(map(tree.left, f), map(tree.right, f))
+        is Leaf -> Leaf(f(tree.value))
+    }
 // end::init[]
 
 class Exercise_3_27 : WordSpec({

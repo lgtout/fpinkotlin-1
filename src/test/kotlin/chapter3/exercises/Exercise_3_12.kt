@@ -1,8 +1,11 @@
 package chapter3.exercises
 
 import chapter3.List
+import chapter3.exercises.Exercise_3_7.foldRight
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.WordSpec
+
+// TODO Don't (!!) use reverse() for either solution
 
 // tag::init[]
 fun <A, B> foldLeftR(xs: List<A>, z: B, f: (B, A) -> B): B = TODO()

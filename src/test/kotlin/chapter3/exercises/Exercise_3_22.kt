@@ -1,16 +1,28 @@
 package chapter3.exercises
 
+import chapter3.Cons
 import chapter3.List
+import chapter3.Nil
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.WordSpec
 
 // tag::init[]
-fun <A> zipWith(xa: List<A>, xb: List<A>, f: (A, A) -> A): List<A> = TODO()
+fun <A> zipWith(xa: List<A>, xb: List<A>, f: (A, A) -> A): List<A> =
+    when (xa) {
+        Nil -> xb
+        is Cons -> when (xb) {
+            Nil -> xa
+            is Cons -> Cons(
+                f(xa.head, xb.head),
+                zipWith(xa.tail, xb.tail, f))
+        }
+    }
+
 // end::init[]
 
 class Exercise_3_22 : WordSpec({
     "list zipWith" should {
-        "!apply a function to elements of two corresponding lists" {
+        "apply a function to elements of two corresponding lists" {
             zipWith(
                 List.of(1, 2, 3),
                 List.of(4, 5, 6)

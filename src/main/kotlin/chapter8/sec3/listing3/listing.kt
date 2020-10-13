@@ -6,6 +6,7 @@ import chapter8.Falsified
 import chapter8.Passed
 import chapter8.RNG
 import chapter8.Result
+import chapter8.SimpleRNG
 import chapter8.State
 import chapter8.TestCases
 import chapter8.double
@@ -13,13 +14,39 @@ import chapter8.nonNegativeInt
 import kotlin.math.absoluteValue
 import kotlin.math.min
 
+fun main() {
+    fun foo(g: Gen<Int>): Set<Int> {
+        val rng: RNG = SimpleRNG(1)
+        return (0..100).fold(Pair(rng, emptyList<Int>())) {
+                (rng, l), i ->
+            val (i1, rng2) = g.sample.run(rng)
+            Pair(rng2, l + i1)
+        }.second.toSet()
+    }
+    val g1 = Gen.choose(5, 10)
+    val g2 = Gen.choose2(5, 10)
+    println(foo(g1).toSet())
+    println(foo(g2).toSet())
+    // val g = Gen<Int>(State { it.nextInt() })
+    // val (i1, rng2) = g.sample.run(rng)
+    // val (i2, rng3) = g.sample.run(rng2)
+    // println(i1)
+    // println(i2)
+}
+
 data class Gen<A>(val sample: State<RNG, A>) {
     companion object {
         fun <A> unit(a: A): Gen<A> = Gen(State.unit(a))
 
+        // TODO This may be wrong.
+        //  Instead: start + (it % (stopExclusive - start))
         fun choose(start: Int, stopExclusive: Int): Gen<Int> =
             Gen(State { rng: RNG -> nonNegativeInt(rng) }
                 .map { (start + it) % (stopExclusive - start) })
+
+        fun choose2(start: Int, stopExclusive: Int): Gen<Int> =
+            Gen(State { rng: RNG -> nonNegativeInt(rng) }
+                .map { start + (it % (stopExclusive - start)) })
 
         fun <A> listOfN(n: Int, ga: Gen<A>): Gen<List<A>> =
             Gen(State.sequence(List(n) { ga.sample }))

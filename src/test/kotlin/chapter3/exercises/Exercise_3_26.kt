@@ -7,12 +7,16 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.WordSpec
 
 // tag::init[]
-fun depth(tree: Tree<Int>): Int = TODO()
+fun depth(tree: Tree<Int>): Int =
+    when (tree) {
+        is Branch -> maxOf(depth(tree.right), depth(tree.left)) + 1
+        is Leaf -> 0
+    }
 // end::init[]
 
 class Exercise_3_26 : WordSpec({
     "tree depth" should {
-        "!determine the maximum depth from the root to any leaf" {
+        "determine the maximum depth from the root to any leaf" {
             val tree = Branch( //0
                 Branch(Leaf(1), Leaf(2)), //2
                 Branch(
