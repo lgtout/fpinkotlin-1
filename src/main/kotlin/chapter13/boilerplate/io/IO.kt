@@ -1,26 +1,62 @@
-package chapter13.sec3_1
+package chapter13.boilerplate.io
 
 import arrow.Kind
 import arrow.extension
 import chapter13.Monad
-import chapter13.sec3_1.io.monad.monad
 import chapter5.Cons
 import chapter5.Empty
 import chapter5.Stream
 
+data class IORef<A>(var value: A) {
+    fun set(a: A): IO<A> = IO { value = a; a }
+    fun get(): IO<A> = IO { value }
+    fun modify(f: (A) -> A): IO<A> = get().flatMap { a -> set(f(a)) }
+}
+
 class ForIO {
     companion object
 }
-
 typealias IOOf<A> = Kind<ForIO, A>
 
 inline fun <A> IOOf<A>.fix(): IO<A> = this as IO<A>
+
+interface IO<A> : IOOf<A> {
+
+    companion object {
+
+        fun <A> unit(a: () -> A) = object : IO<A> {
+            override fun run(): A = a()
+        }
+
+        operator fun <A> invoke(a: () -> A) = unit(a)
+
+        fun ref(i: Int): IO<IORef<Int>> = IO { IORef(i) }
+    }
+
+    fun run(): A
+
+    fun <B> map(f: (A) -> B): IO<B> =
+        object : IO<B> {
+            override fun run(): B = f(this@IO.run())
+        }
+
+    fun <B> flatMap(f: (A) -> IO<B>): IO<B> =
+        object : IO<B> {
+            override fun run(): B = f(this@IO.run()).run()
+        }
+
+    infix fun <B> product(io: IO<B>): IO<Pair<A, B>> =
+        object : IO<Pair<A, B>> {
+            override fun run(): Pair<A, B> =
+                Pair(this@IO.run(), io.run())
+        }
+}
 
 @extension
 interface IOMonad : Monad<ForIO> {
 
     override fun <A> unit(a: A): IOOf<A> =
-        IO.unit(a).fix()
+        IO.unit { a }.fix()
 
     override fun <A, B> flatMap(
         fa: IOOf<A>,
@@ -83,59 +119,4 @@ interface IOMonad : Monad<ForIO> {
 
     fun <A> sequenceDiscard(vararg fa: IOOf<A>): IOOf<Unit> =
         sequenceDiscard(Stream.of(*fa))
-}
-
-//tag::init1[]
-sealed class IO<A> : IOOf<A> {
-
-    companion object {
-        fun <A> unit(a: A) = Suspend { a }
-    }
-
-    fun <B> flatMap(f: (A) -> IO<B>): IO<B> = FlatMap(this, f)
-    fun <B> map(f: (A) -> B): IO<B> = flatMap { a -> Return(f(a)) }
-}
-
-data class Return<A>(val a: A) : IO<A>() // <1>
-data class Suspend<A>(val resume: () -> A) : IO<A>() // <2>
-data class FlatMap<A, B>(
-    val sub: IO<A>,
-    val f: (A) -> IO<B>
-) : IO<B>() //<3>
-//end::init1[]
-
-//tag::init2[]
-fun stdout(s: String): IO<Unit> = Suspend { println(s) }
-
-val p = IO.monad()
-    .forever<Unit, Unit>(stdout("To infinity and beyond!"))
-    .fix()
-//end::init2[]
-
-//tag::init3[]
-@Suppress("UNCHECKED_CAST")
-tailrec fun <A> run(io: IO<A>): A =
-    when (io) {
-        is Return -> io.a
-        is Suspend -> io.resume()
-        is FlatMap<*, *> -> { // <1>
-            val x = io.sub as IO<A>
-            val f = io.f as (A) -> IO<A>
-            when (x) {
-                is Return ->
-                    run(f(x.a))
-                is Suspend -> // <2>
-                    run(f(x.resume()))
-                is FlatMap<*, *> -> {
-                    val g = x.f as (A) -> IO<A>
-                    val y = x.sub as IO<A>
-                    run(y.flatMap { a: A -> g(a).flatMap(f) }) // <3>
-                }
-            }
-        }
-    }
-//end::init3[]
-
-fun main() {
-    run(p)
 }
