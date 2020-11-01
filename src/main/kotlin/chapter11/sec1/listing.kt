@@ -22,7 +22,7 @@ fun <A, B> map(ga: Option<A>, f: (A) -> B): Option<B>
     = TODO()
 
 //tag::init2[]
-fun <A, B> map(ga: Gen<A>, f: (A) -> B): Gen<B>
+fun <A, B> genMap(ga: Gen<A>, f: (A) -> B): Gen<B>
 //end::init2[]
     = TODO()
 

@@ -3,25 +3,55 @@ package chapter8.sec3.listing3
 import arrow.core.getOrElse
 import arrow.core.toOption
 import chapter8.Falsified
+import chapter8.MaxSize
 import chapter8.Passed
 import chapter8.RNG
 import chapter8.Result
 import chapter8.SimpleRNG
-import chapter8.State
-import chapter8.TestCases
 import chapter8.double
 import chapter8.nonNegativeInt
 import kotlin.math.absoluteValue
 import kotlin.math.min
 
+typealias State<S, A> = (S) -> Pair<A, S>
 typealias Gen<A> = State<RNG, A>
 typealias SGen<A> = (Int) -> Gen<A>
-typealias MaxSize = Int
+typealias TestCases = Int
 typealias Prop = (MaxSize, TestCases, RNG) -> Result
 
+fun <S, A, B> State<S, A>.map(f: (A) -> B): State<S, B> =
+    flatMap { a -> unit<S, B>(f(a)) }
+
+fun <S, A, B> State<S, A>.flatMap(f: (A) -> State<S, B>): State<S, B> =
+    { s: S ->
+        val (a: A, s2: S) = this(s)
+        f(a)(s2)
+    }
+
+fun <S, A> unit(a: A): State<S, A> =
+    { s: S -> Pair(a, s) }
+
+fun <S, A, B, C> map2(
+    ra: State<S, A>,
+    rb: State<S, B>,
+    f: (A, B) -> C
+): State<S, C> =
+    ra.flatMap { a ->
+        rb.map { b ->
+            f(a, b)
+        }
+    }
+
+fun <S, A> sequence(
+    fs: List<State<S, A>>
+): State<S, List<A>> =
+    fs.foldRight(unit(emptyList())) { f, acc ->
+        map2(f, acc) { h, t -> listOf(h) + t }
+    }
+
 fun main() {
-    val p = forAll(
-        sGen(Gen { rng -> nonNegativeInt(rng) })
+    val p = forAllSGen(
+        sGen { rng -> nonNegativeInt(rng) }
     ) { it.all { i -> i >= 0 } }
     // ) { it::all { i -> i >= 0 } }
     // val r = p.check(2, 5, SimpleRNG(0))
@@ -34,17 +64,15 @@ fun main() {
     println(r)
 }
 
-fun <A> unit(a: A): Gen<A> = State.unit(a)
-
 /* This is actually not a uniform distribution. If the
 range of nonNegativeInt isn't a multiple of (stopExclusive - start),
 some numbers will be generated with greater frequency than others. */
 fun choose(start: Int, stopExclusive: Int): Gen<Int> =
-    State { rng: RNG -> nonNegativeInt(rng) }
-        .map { start + (it % (stopExclusive - start)) }
+    { rng: RNG -> double(rng) }
+        .map { start + (it * (stopExclusive - start)).toInt() }
 
 fun <A> listOfN(n: Int, ga: Gen<A>): Gen<List<A>> =
-    State.sequence(List(n) { ga })
+    sequence(List(n) { ga })
 
 fun <A> weighted(
     pga: Pair<Gen<A>, Double>,
@@ -55,7 +83,7 @@ fun <A> weighted(
     val prob =
         p1.absoluteValue /
             (p1.absoluteValue + p2.absoluteValue)
-    return State { rng: RNG -> double(rng) }
+    return { rng: RNG -> double(rng) }
         .flatMap { d ->
             if (d < prob) ga else gb
         }
@@ -66,7 +94,7 @@ fun <A> sGen(ga: Gen<A>): SGen<List<A>> =
 
 //tag::init[]
 
-fun <A> forAll(g: SGen<A>, f: (A) -> Boolean): Prop =
+fun <A> forAllSGen(g: SGen<A>, f: (A) -> Boolean): Prop =
     /* max is the maximum size of each test-case i.e. the size
     of each List<A> that our SGen<List<A>> generates. */
     { max, n, rng ->
@@ -81,8 +109,7 @@ fun <A> forAll(g: SGen<A>, f: (A) -> Boolean): Prop =
         we increase the number of cases so that is possible.
         With this calculation, we don't need to specify n >= max
         in order to ensure we get at least 1 case per size.  We
-        would if instead we had simply n/max.  Rather, n = 1 will
-        do just fine. */
+        would if instead we had simply n/max. */
         val casePerSize: Int = (n + (max - 1)) / max // <2>
         // val casePerSize: Int = n / max // <2>
         // val casePerSize: Int = (n + max) / max // <2>
@@ -105,9 +132,10 @@ fun <A> forAll(g: SGen<A>, f: (A) -> Boolean): Prop =
 
                     println("size $i")
 
-                    // Use Gen<List<A>> and (A) -> Boolean to
+                    // Use Gen<List<A>> and (List<A>) -> Boolean to
                     // construct a Prop for the current i-sized
-                    // size-bucket.
+                    // size-bucket.  The Prop will be for one test
+                    // case of a List<A> of size i.
                     forAll(g(i), f)
                 } // <4>
 
@@ -126,8 +154,8 @@ fun <A> forAll(g: SGen<A>, f: (A) -> Boolean): Prop =
         // The 100 doesn't change the behavior.
         // Here we check the composite Prop, i.e. the Prop that
         // includes all Props in all buckets.
-        // TODO Does n have any effect?
-        prop(100, n, rng) // <6>
+        // TODO Does n have any effect?  NO!
+        prop(10000, 10000, rng) // <6>
         // prop.check(max, n, rng) // <6>
     }
 
@@ -163,7 +191,7 @@ private fun <A> randomSequence(
     rng: RNG
 ): Sequence<A> =
     sequence {
-        val (a: A, rng2: RNG) = ga.run(rng)
+        val (a: A, rng2: RNG) = ga(rng)
         yield(a)
         yieldAll(randomSequence(ga, rng2))
     }
@@ -179,9 +207,9 @@ private fun <A> buildMessage(a: A, e: Exception) =
 
 fun Prop.and(p: Prop): Prop =
     { max, n, rng -> // <7>
-        when (val prop = this(max, n, rng)) {
+        when (val result: Result = this(max, n, rng)) {
             is Passed -> p(max, n, rng)
-            is Falsified -> prop
+            is Falsified -> result
         }
     }
 //end::init[]

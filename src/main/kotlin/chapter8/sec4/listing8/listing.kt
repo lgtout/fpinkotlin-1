@@ -7,7 +7,7 @@ import chapter8.Passed
 import chapter8.sec3.listing3.Prop
 import java.util.concurrent.Executors
 
-fun check(p: () -> Boolean): Prop = Prop { _, _, _ ->
+fun check(p: () -> Boolean): Prop = { _, _, _ ->
     if (p()) Passed else Falsified("()", 0)
 }
 

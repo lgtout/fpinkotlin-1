@@ -7,7 +7,7 @@ import chapter8.sec3.listing3.Prop
 val listing5 = {
     //tag::init[]
     fun check(p: () -> Boolean): Prop =
-        Prop { _, _, _ ->
+        { _, _, _ ->
             if (p()) Passed
             else Falsified("()", 0)
         }

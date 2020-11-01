@@ -1,9 +1,13 @@
 package chapter8.sec4.listing10
 
 import chapter7.sec4.Par
+import chapter8.RNG
 import chapter8.sec3.listing3.Gen
 import chapter8.sec3.listing3.Prop
-import chapter8.sec3.listing3.Prop.Companion.forAll
+import chapter8.sec3.listing3.choose
+import chapter8.sec3.listing3.forAll
+import chapter8.sec3.listing3.map
+import chapter8.sec3.listing3.unit
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -17,10 +21,10 @@ fun <A, B, C> map2(ga: Gen<A>, gb: Gen<B>, f: (A, B) -> C): Gen<C> =
 
 //tag::init1[]
 val ges: Gen<ExecutorService> = weighted( // <1>
-    Gen.choose(1, 4).map {
+    choose(1, 4).map {
         Executors.newFixedThreadPool(it)
     } to .75, // <2>
-    Gen.unit(
+    unit<RNG, ExecutorService> (
         Executors.newCachedThreadPool()
     ) to .25) // <3>
 

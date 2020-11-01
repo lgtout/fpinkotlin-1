@@ -5,10 +5,10 @@ import chapter8.Falsified
 import chapter8.Passed
 import chapter8.RNG
 import chapter8.SimpleRNG
-import chapter8.sec3.listing3.Gen
 import chapter8.sec3.listing3.Prop
-import chapter8.sec3.listing3.Prop.Companion.forAll
-import chapter8.sec3.listing3.SGen
+import chapter8.sec3.listing3.choose
+import chapter8.sec3.listing3.forAllSGen
+import chapter8.sec3.listing3.sGen
 
 //tag::init2[]
 fun run(
@@ -17,7 +17,7 @@ fun run(
     testCases: Int = 100, // <2>
     rng: RNG = SimpleRNG(System.currentTimeMillis()) // <3>
 ): Unit =
-    when (val result = p.check(maxSize, testCases, rng)) {
+    when (val result = p(maxSize, testCases, rng)) {
         is Falsified -> // <4>
             println(
                 "Falsified after ${result.successes}" +
@@ -30,9 +30,9 @@ fun run(
 
 fun main() {
     //tag::init1[]
-    val smallInt = Gen.choose(-10, 10)
+    val smallInt = choose(-10, 10)
 
-    val maxProp = forAll(SGen.listOf(smallInt)) { ns ->
+    val maxProp = forAllSGen(sGen(smallInt)) { ns ->
         val mx = ns.max()
             ?: throw IllegalStateException("max on empty list")
         !ns.exists { it > mx } // <1>

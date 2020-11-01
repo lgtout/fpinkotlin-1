@@ -4,6 +4,8 @@ import chapter7.sec4.Par
 import chapter7.sec4.map
 import chapter7.sec4.unit
 import chapter8.sec3.listing3.Gen
+import chapter8.sec3.listing3.choose
+import chapter8.sec3.listing3.map
 import chapter8.sec4.listing12.forAllPar
 import chapter8.sec4.listing9.equal
 
@@ -24,7 +26,7 @@ val listing = {
 val listing2 = {
     //tag::init3[]
     val pint: Gen<Par<Int>> =
-        Gen.choose(0, 10).map {
+        choose(0, 10).map {
             unit(it)
         }
 

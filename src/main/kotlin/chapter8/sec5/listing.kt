@@ -2,18 +2,23 @@ package chapter8.sec5
 
 import arrow.core.extensions.list.foldable.forAll
 import chapter8.sec3.listing3.Gen
-import chapter8.sec3.listing3.Prop
+import chapter8.sec3.listing3.choose
+import chapter8.sec3.listing3.flatMap
+import chapter8.sec3.listing3.forAll
+import chapter8.sec3.listing3.listOfN
+import chapter8.sec3.listing3.map
 import chapter8.sec4.listing1.run
+import chapter8.sec3.listing3.unit as sUnit
 
 val listing = {
 
     val n = 10
-    val ga = Gen.choose(1, 10)
+    val ga = choose(1, 10)
     //tag::init1[]
     val isEven = { i: Int -> i % 2 == 0 }
 
     val takeWhileProp =
-        Prop.forAll(Gen.listOfN(n, ga)) { ns ->
+        forAll(listOfN(n, ga)) { ns ->
             ns.takeWhile(isEven).forAll(isEven)
         }
     //end::init1[]
@@ -32,13 +37,13 @@ val listing = {
 fun main() {
     //tag::init4[]
     fun genIntBooleanFn(t: Int): Gen<(Int) -> Boolean> =
-        Gen.unit { i: Int -> i > t }
+        sUnit { i: Int -> i > t }
     //end::init4[]
 
     //tag::init5[]
     val gen: Gen<Boolean> =
-        Gen.listOfN(100, Gen.choose(1, 100)).flatMap { ls: List<Int> ->
-            Gen.choose(1, ls.size / 2).flatMap { threshold: Int ->
+        listOfN(100, choose(1, 100)).flatMap { ls: List<Int> ->
+            choose(1, ls.size / 2).flatMap { threshold: Int ->
                 genIntBooleanFn(threshold).map { fn: (Int) -> Boolean ->
                     ls.takeWhile(fn).forAll(fn)
                 }
@@ -47,6 +52,6 @@ fun main() {
     //end::init5[]
 
     //tag::init6[]
-    run(Prop.forAll(gen) { success -> success })
+    run(forAll(gen) { success -> success })
     //end::init6[]
 }
