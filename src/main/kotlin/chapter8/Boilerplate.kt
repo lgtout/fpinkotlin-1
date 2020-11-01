@@ -6,8 +6,8 @@ interface RNG {
 
 data class SimpleRNG(val seed: Long) : RNG {
     override fun nextInt(): Pair<Int, RNG> {
-        // 0x5DEECE66DL =>    25214903917     => 10111011110111011001110011001101101
-        // 0xBL =>                     11     => 1011
+        // 0x5DEECE66DL    => 25214903917     => 10111011110111011001110011001101101
+        // 0xBL            => 11              => 1011
         // 0xFFFFFFFFFFFFL => 281474976710655 => 111111111111111111111111111111111111111111111111 (48 1s)
         val newSeed = (seed * 0x5DEECE66DL + 0xBL) and 0xFFFFFFFFFFFFL
         val nextRNG = SimpleRNG(newSeed)
