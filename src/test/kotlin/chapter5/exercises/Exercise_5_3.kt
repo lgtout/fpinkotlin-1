@@ -17,7 +17,7 @@ class Exercise_5_3 : WordSpec({
     //tag::init[]
     fun <A> Stream<A>.takeWhile(p: (A) -> Boolean): Stream<A> =
         when (this) {
-            is Cons -> if (p(h())) cons(h, { t().takeWhile(p) })
+            is Cons -> if (p(head())) cons(head, { tail().takeWhile(p) })
             else Empty
             is Empty -> Empty
         }

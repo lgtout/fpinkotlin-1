@@ -16,13 +16,13 @@ import io.kotlintest.specs.WordSpec
 class Exercise_5_1 : WordSpec({
     //tag::init[]
     fun <A> Stream<A>.toList(): List<A> = when (this) {
-        is Cons -> LCons(h(), t().toList())
+        is Cons -> LCons(head(), tail().toList())
         is Empty -> Nil
     }
     fun <A> Stream<A>.toList2(): List<A> {
         tailrec fun go(l: List<A>, s: Stream<A>): List<A> =
             when (s) {
-                is Cons -> go(LCons(s.h(), l), s.t())
+                is Cons -> go(LCons(s.head(), l), s.tail())
                 is Empty -> l
             }
         return reverse(go(Nil, this))

@@ -18,7 +18,7 @@ import io.kotlintest.specs.WordSpec
 fun <A, B> Stream<A>.map(f: (A) -> B): Stream<B> =
     unfold(this) { s ->
         when (s) {
-            is Cons -> Some(Pair(f(s.h()), s.t()))
+            is Cons -> Some(Pair(f(s.head()), s.tail()))
             else -> None
         }
     }
@@ -28,7 +28,7 @@ fun <A> Stream<A>.take(n: Int): Stream<A> =
         when (s) {
             is Cons -> {
                 when {
-                    n > 0 -> Some(Pair(s.h(), Pair(s.t(), n-1)))
+                    n > 0 -> Some(Pair(s.head(), Pair(s.tail(), n-1)))
                     else -> None
                 }
             }
@@ -40,8 +40,8 @@ fun <A> Stream<A>.takeWhile(p: (A) -> Boolean): Stream<A> =
     unfold(this) { s ->
         when (s) {
             is Cons -> {
-                when (p(s.h())) {
-                    true -> Some(Pair(s.h(), s.t()))
+                when (p(s.head())) {
+                    true -> Some(Pair(s.head(), s.tail()))
                     false -> None
                 }
             }
@@ -54,7 +54,7 @@ fun <A, B, C> Stream<A>.zipWith(
     f: (A, B) -> C
 ): Stream<C> = unfold(Pair(this, that)) { (a, b) ->
     when {
-        a is Cons && b is Cons -> Some(Pair(f(a.h(), b.h()), Pair(a.t(), b.t())))
+        a is Cons && b is Cons -> Some(Pair(f(a.head(), b.head()), Pair(a.tail(), b.tail())))
         else -> None
     }
 }
@@ -67,10 +67,10 @@ fun <A, B> Stream<A>.zipAll(
     that: Stream<B>
 ): Stream<Pair<Option<A>, Option<B>>> = unfold(Pair(this, that)) { (a, b) ->
     when {
-        // a is Cons && b is Cons -> foo(Some(a.h()), Some(b.h()), a.t(), b.t()))
-        a is Cons && b is Cons -> Some(Pair(Pair(Some(a.h()), Some(b.h())), Pair(a.t(), b.t())))
-        a is Empty && b is Cons -> Some(Pair(Pair(None, Some(b.h())), Pair(Empty, b.t())))
-        a is Cons && b is Empty -> Some(Pair(Pair(Some(a.h()), None), Pair(a.t(), Empty)))
+        // a is Cons && b is Cons -> foo(Some(a.head()), Some(b.head()), a.tail(), b.tail()))
+        a is Cons && b is Cons -> Some(Pair(Pair(Some(a.head()), Some(b.head())), Pair(a.tail(), b.tail())))
+        a is Empty && b is Cons -> Some(Pair(Pair(None, Some(b.head())), Pair(Empty, b.tail())))
+        a is Cons && b is Empty -> Some(Pair(Pair(Some(a.head()), None), Pair(a.tail(), Empty)))
         else -> None
     }
 }

@@ -20,7 +20,7 @@ class Exercise_5_2 : WordSpec({
         when (this) {
             is Cons -> when {
                 n <= 0 -> Empty
-                else -> cons(h, { t().take(n-1) })
+                else -> cons(head, { tail().take(n-1) })
             }
             is Empty -> Empty
         }
@@ -31,7 +31,7 @@ class Exercise_5_2 : WordSpec({
         when (this) {
             is Cons -> when {
                 n <= 0 -> this
-                else -> t().drop(n-1)
+                else -> tail().drop(n-1)
             }
             is Empty -> Empty
         }

@@ -22,7 +22,7 @@ class Exercise_5_15 : WordSpec({
     fun <A> Stream<A>.tails(): Stream<Stream<A>> =
         unfold(this) { s ->
             when (s) {
-                is Cons -> Some(Pair(s, s.t()))
+                is Cons -> Some(Pair(s, s.tail()))
                 else -> None
             }
         }
